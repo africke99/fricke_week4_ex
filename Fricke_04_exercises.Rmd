@@ -95,13 +95,26 @@ These exercises will reiterate what you learned in the "Mapping data with R" tut
 ### Starbucks locations (`ggmap`)
 
   1. Add the `Starbucks` locations to a world map. Add an aesthetic to the world map that sets the color of the points according to the ownership type. What, if anything, can you deduce from this visualization?  
+  
+**You can see that the majority of company owned and licensed Starbucks are within the US, whereas the majority of joint venture Starbucks are in China and Japan**
 
 ```{r}
-ggplot(data=Starbucks) +
-  geom_point(aes(x = Longitude, y = Latitude), 
-             alpha = 0.2, 
-             size = .1,
-             color = Ownership_Type)
+world <- get_stamenmap(
+    bbox = c(left = -180, bottom = -57, right = 179, top = 82.1), 
+    maptype = "terrain",
+    zoom = 2)
+
+ggmap(world) +
+  geom_point(data = Starbucks, 
+             aes(x = Longitude, y = Latitude, color = `Ownership Type`),
+             alpha = .3, 
+             size = .1) +
+  labs(title = "Starbucks Ownership Type Worldwide",
+       x.lab = "",
+       y.lab = "")+
+  theme(legend.text = element_text(size = 5))+
+  theme_map()
+
 ```
 
 
@@ -233,14 +246,7 @@ Stations<-read_csv("http://www.macalester.edu/~dshuman1/data/112/DC-Stations.csv
   
 ### COVID-19 data
 
-kkechely@macalester.edu
-clopez2@macalester.edu
-skelly1@macalester.edu
-yfang@macalester.edu
-elugthar@macalester.edu
-jcasilla@macalester.edu
-612 239 0235
-9733889155
+
 
 The following exercises will use the COVID-19 data from the NYT.
 
@@ -310,17 +316,79 @@ mpls_suspicious
 
   
   15. Use a `leaflet` map and the `MplsStops` dataset to display each of the stops on a map as a small point. Color the points differently depending on whether they were for suspicious vehicle/person or a traffic stop (the `problem` variable). HINTS: use `addCircleMarkers`, set `stroke = FAlSE`, use `colorFactor()` to create a palette.  
-  
-  16. Save the folder from moodle called Minneapolis_Neighborhoods into your project/repository folder for this assignment. Make sure the folder is called Minneapolis_Neighborhoods. Use the code below to read in the data and make sure to **delete the `eval=FALSE`**. Although it looks like it only links to the .sph file, you need the entire folder of files to create the `mpls_nbhd` data set. These data contain information about the geometries of the Minneapolis neighborhoods. Using the `mpls_nbhd` dataset as the base file, join the `mpls_suspicious` and `MplsDemo` datasets to it by neighborhood (careful, they are named different things in the different files). Call this new dataset `mpls_all`.
 
-```{r, eval=FALSE}
+```{r}
+pall<- colorFactor("viridis", domain = MplsStops$problem) 
+
+leaflet(data = MplsStops) %>% 
+  addTiles() %>%
+  addProviderTiles(providers$Stamen.TerrainLabels) %>% 
+  addCircleMarkers(lng= ~long,
+                   lat= ~lat,
+                   label = ~neighborhood,
+                   color=~pall(problem),
+                   stroke=FALSE,
+                   radius=2) %>% 
+  addLegend(pal = pall, values=~problem)
+
+```
+
+  
+  16. Save the folder from moodle called Minneapolis_Neighborhoods into your project/repository folder for this assignment. Make sure the folder is called Minneapolis_Neighborhoods. Use the code below to read in the data and make sure to **delete the `eval=FALSE`**. Although it looks like it only links to the .sph file, you need the entire folder of files to create the `mpls_nbhd` data set. These data contain information about the geometries of the Minneapolis neighborhoods. Using the `mpls_nbhd` dataset as the base file, 
+  join the `mpls_suspicious` and `MplsDemo` datasets to it by neighborhood (careful, they are named different things in the different files). Call this new dataset `mpls_all`.
+
+```{r}
 mpls_nbhd <- st_read("Minneapolis_Neighborhoods/Minneapolis_Neighborhoods.shp", quiet = TRUE)
+
+mpls_all<-mpls_nbhd %>% 
+  left_join(MplsDemo,
+            by=c("BDNAME" ="neighborhood"))
+mpls_all<-mpls_all %>% 
+  left_join(mpls_suspicious,
+            by=c("BDNAME" = "neighborhood"))
+
 ```
 
   17. Use `leaflet` to create a map from the `mpls_all` data  that colors the neighborhoods by `prop_suspicious`. Display the neighborhood name as you scroll over it. Describe what you observe in the map.
+
+```{r}
+pall2 <- colorNumeric("viridis", 
+                     domain = mpls_suspicious$prop_stops)
+
+leaflet(data = mpls_all) %>% 
+  addTiles() %>% 
+  addPolygons(fillColor = ~pall2(sus_stops_prop),
+              fillOpacity = 0.6,
+              stroke = FALSE,
+              label = ~paste(str_to_title(BDNAME))) %>% 
+    addLegend(pal = pall2, 
+            values = ~sus_stops_prop, 
+            opacity = 0.6, 
+            title = ~"Types of stops across neighborhoods",
+            position = "bottomright")
+
+```
+
   
   18. Use `leaflet` to create a map of your own choosing. Come up with a question you want to try to answer and use the map to help answer that question. Describe what your map shows. 
-  
+
+```{r}
+pall2 <- colorNumeric("magma", 
+                     domain = mpls_suspicious$prop_stops)
+
+leaflet(data = mpls_all) %>% 
+  addTiles() %>% 
+  addPolygons(fillColor = ~pall2(collegeGrad),
+              fillOpacity = 0.6,
+              stroke = FALSE,
+              label = ~paste(str_to_title(BDNAME))) %>% 
+    addLegend(pal = pall2, 
+            values = ~collegeGrad, 
+            opacity = 0.6, 
+            title = ~"change title",
+            position = "bottomright")
+```
+
   
 ## GitHub link
 
